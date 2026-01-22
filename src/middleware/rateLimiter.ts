@@ -6,4 +6,12 @@ export const rateLimiter = rateLimit({
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => {
+    // Skip rate limiting for health check endpoint
+    return req.path === '/health';
+  },
+  keyGenerator: (req) => {
+    // Use IP address for rate limiting
+    return req.ip || 'unknown';
+  },
 });

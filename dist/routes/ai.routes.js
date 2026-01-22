@@ -1,0 +1,12 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const ai_controller_1 = require("../controllers/ai.controller");
+const auth_1 = require("../middleware/auth");
+const router = (0, express_1.Router)();
+const aiController = new ai_controller_1.AIController();
+router.get('/signals', auth_1.authenticate, aiController.getTradingSignals);
+router.get('/analysis/:symbol', auth_1.authenticate, aiController.getSymbolAnalysis);
+router.post('/predict', auth_1.authenticate, aiController.getPricePrediction);
+router.get('/sentiment/:symbol', auth_1.authenticate, aiController.getSentimentAnalysis);
+exports.default = router;

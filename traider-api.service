@@ -1,0 +1,23 @@
+[Unit]
+Description=TrAIder API Production Server
+After=network.target postgresql.service redis.service
+
+[Service]
+Type=simple
+User=traider
+WorkingDirectory=/home/traider/TrAIder-API
+Environment="NODE_ENV=production"
+Environment="PATH=/usr/local/bin:/usr/bin:/bin"
+ExecStart=/usr/bin/node start-prod.js
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=traider-api
+
+# Resource limits
+MemoryMax=1G
+CPUQuota=50%
+
+[Install]
+WantedBy=multi-user.target

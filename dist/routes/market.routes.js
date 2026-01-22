@@ -1,0 +1,12 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const market_controller_1 = require("../controllers/market.controller");
+const auth_1 = require("../middleware/auth");
+const router = (0, express_1.Router)();
+const marketController = new market_controller_1.MarketController();
+router.get('/tickers', auth_1.authenticate, marketController.getTickers);
+router.get('/ticker/:symbol', auth_1.authenticate, marketController.getTickerData);
+router.get('/candles/:symbol', auth_1.authenticate, marketController.getCandlestickData);
+router.get('/search', auth_1.authenticate, marketController.searchSymbols);
+exports.default = router;

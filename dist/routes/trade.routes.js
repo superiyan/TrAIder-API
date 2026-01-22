@@ -1,0 +1,17 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const trade_controller_1 = require("../controllers/trade.controller");
+const auth_1 = require("../middleware/auth");
+const validateRequest_1 = require("../middleware/validateRequest");
+const trade_validator_1 = require("../validators/trade.validator");
+const router = (0, express_1.Router)();
+const tradeController = new trade_controller_1.TradeController();
+router.get('/portfolio', auth_1.authenticate, tradeController.getPortfolio);
+router.get('/positions', auth_1.authenticate, tradeController.getPositions);
+router.post('/order', auth_1.authenticate, (0, validateRequest_1.validateRequest)(trade_validator_1.tradeValidation.createOrder), tradeController.placeOrder);
+router.get('/orders', auth_1.authenticate, tradeController.getOrders);
+router.get('/orders/:id', auth_1.authenticate, tradeController.getOrderById);
+router.delete('/order/:id', auth_1.authenticate, tradeController.cancelOrder);
+router.get('/history', auth_1.authenticate, tradeController.getTradeHistory);
+exports.default = router;

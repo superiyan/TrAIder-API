@@ -3,22 +3,44 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
+import path from 'path';
 import { errorHandler } from './middleware/errorHandler';
 import { notFoundHandler } from './middleware/notFoundHandler';
 import { rateLimiter } from './middleware/rateLimiter';
 import logger from './utils/logger';
 import routes from './routes';
+import { validateEnvironment, config } from './utils/envValidator';
 
-// Load environment variables
-dotenv.config();
+// Load environment variables based on NODE_ENV
+const nodeEnv = process.env.NODE_ENV || 'development';
+const envFile = nodeEnv === 'production' ? '.env.production' : '.env';
+dotenv.config({ path: path.resolve(process.cwd(), envFile) });
+
+// For docker, also try default .env
+if (nodeEnv === 'production' && !process.env.DATABASE_URL) {
+  dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+}
+
+// Validate required environment variables
+try {
+  validateEnvironment();
+} catch (error) {
+  logger.error(`❌ Configuration Error: ${error instanceof Error ? error.message : String(error)}`);
+  console.error(`\n❌ FATAL: Configuration Error`);
+  console.error(error instanceof Error ? error.message : String(error));
+  process.exit(1);
+}
 
 const app: Application = express();
-const PORT = parseInt(process.env.PORT || '3000', 10);
+const PORT = config.port;
+
+// Trust proxy for Docker/Production environments
+app.set('trust proxy', true);
 
 // Security middleware
 app.use(helmet());
 app.use(cors({
-  origin: process.env.CORS_ORIGIN?.split(',') || '*',
+  origin: config.corsOrigin,
   credentials: true
 }));
 
@@ -38,7 +60,7 @@ app.get('/health', (_req, res) => {
 });
 
 // API routes
-app.use(`/api/${process.env.API_VERSION || 'v1'}`, routes);
+app.use(`/api/${config.apiVersion}`, routes);
 
 // Error handling
 app.use(notFoundHandler);
@@ -46,7 +68,7 @@ app.use(errorHandler);
 
 // Start server  
 const server = app.listen(PORT, '0.0.0.0', () => {
-  logger.info(`🚀 Server running on http://0.0.0.0:${PORT} in ${process.env.NODE_ENV} mode`);
+  logger.info(`🚀 Server running on http://0.0.0.0:${PORT} in ${config.nodeEnv} mode`);
   console.log(`\n✅ Server is ready!`);
   console.log(`📡 Local: http://localhost:${PORT}`);
   console.log(`📡 Network: http://0.0.0.0:${PORT}`);
