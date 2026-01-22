@@ -1,22 +1,25 @@
-name: Production Deployment
+name: Deploy to Production
 
 on:
   push:
     branches: [main]
+    tags: ['v*']
   workflow_dispatch:
     inputs:
-      environment:
-        description: 'Deployment environment'
+      deploy_type:
+        description: 'Deployment type'
         required: true
-        default: 'production'
+        default: 'rolling'
         type: choice
         options:
-          - production
-          - staging
+          - rolling
+          - blue-green
+          - manual
 
 jobs:
-  build-and-test:
+  deploy:
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
     
     services:
       postgres:

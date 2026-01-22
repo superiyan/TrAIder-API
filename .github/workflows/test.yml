@@ -1,0 +1,85 @@
+name: Test & Lint
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: traider
+          POSTGRES_PASSWORD: testpass123
+          POSTGRES_DB: traider_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Setup test environment
+        run: |
+          cp .env.example .env.test
+          echo "DATABASE_URL=postgresql://traider:testpass123@localhost:5432/traider_test" >> .env.test
+          echo "NODE_ENV=test" >> .env.test
+          echo "JWT_SECRET=$(openssl rand -hex 32)" >> .env.test
+          echo "PORT=3001" >> .env.test
+      
+      - name: Run Prisma migrations
+        run: npx prisma migrate deploy --skip-generate
+        env:
+          DATABASE_URL: postgresql://traider:testpass123@localhost:5432/traider_test
+      
+      - name: Build project
+        run: npm run build
+      
+      - name: Lint code
+        run: npm run lint --if-present
+      
+      - name: Run tests
+        run: npm test --if-present
+        env:
+          DATABASE_URL: postgresql://traider:testpass123@localhost:5432/traider_test
+          NODE_ENV: test
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Check for vulnerabilities
+        run: npm audit --audit-level=moderate
+        continue-on-error: true
+      
+      - name: Check for deprecated packages
+        run: npm outdated --production
+        continue-on-error: true
